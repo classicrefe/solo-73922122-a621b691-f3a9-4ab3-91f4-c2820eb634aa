@@ -1,0 +1,100 @@
+{
+  "version": "1.0.0",
+  "description": "数据质量闸门支持的质量规则类型目录",
+  "rule_categories": [
+    {
+      "category": "field_rules",
+      "description": "字段级约束，按记录逐字段评估；同字段可配置多条规则",
+      "rule_types": [
+        {
+          "type": "required",
+          "params": {},
+          "description": "必填；值为 null 或空白字符串时失败",
+          "example": {"type": "required"}
+        },
+        {
+          "type": "type",
+          "params": {"value": "string | integer | number | boolean"},
+          "description": "校验 JSON 值类型；boolean 不会被视为 integer",
+          "example": {"type": "type", "value": "string"}
+        },
+        {
+          "type": "min",
+          "params": {"min": "number"},
+          "description": "数值下界（含），非数值直接失败",
+          "example": {"type": "min", "min": 0}
+        },
+        {
+          "type": "max",
+          "params": {"max": "number"},
+          "description": "数值上界（含），非数值直接失败",
+          "example": {"type": "max", "max": 120}
+        },
+        {
+          "type": "min_length",
+          "params": {"min_length": "integer"},
+          "description": "字符串最小长度，非字符串直接失败",
+          "example": {"type": "min_length", "min_length": 2}
+        },
+        {
+          "type": "max_length",
+          "params": {"max_length": "integer"},
+          "description": "字符串最大长度，非字符串直接失败",
+          "example": {"type": "max_length", "max_length": 32}
+        },
+        {
+          "type": "in",
+          "params": {"values": ["允许取值列表"]},
+          "description": "枚举校验，值必须出现在 values 中",
+          "example": {"type": "in", "values": ["active", "inactive"]}
+        },
+        {
+          "type": "regex",
+          "params": {"pattern": "正则表达式字符串"},
+          "description": "正则搜索匹配（re.search），非字符串直接失败",
+          "example": {"type": "regex", "pattern": "^[A-Z]{3}-\\d{4}$"}
+        }
+      ]
+    },
+    {
+      "category": "unique_rules",
+      "description": "跨记录唯一性；字段组合在整个批次内不得重复，任一组成字段为 null 时跳过该记录",
+      "rule_types": [
+        {
+          "type": "unique",
+          "params": {"fields": ["字段名列表，至少一个"]},
+          "description": "按字段组合去重，冲突时所有涉及记录均计入失败",
+          "example": {"fields": ["order_id"]}
+        }
+      ]
+    },
+    {
+      "category": "batch_rules",
+      "description": "批次级阈值；任一不满足则整批拒绝（FAILED），不会登记可读批次",
+      "rule_types": [
+        {
+          "type": "max_failure_rate",
+          "params": {"max_failure_rate": "0.0 ~ 1.0，必填"},
+          "description": "失败记录数 / 总记录数 的上限（不含等号之外：超过阈值即失败）",
+          "example": {"max_failure_rate": 0.0}
+        },
+        {
+          "type": "min_record_count",
+          "params": {"min_record_count": "integer，默认 0"},
+          "description": "批次最小记录数",
+          "example": {"min_record_count": 1}
+        },
+        {
+          "type": "max_record_count",
+          "params": {"max_record_count": "integer，可空"},
+          "description": "批次最大记录数",
+          "example": {"max_record_count": 10000}
+        }
+      ]
+    }
+  ],
+  "status_semantics": {
+    "PASSED": "全部字段规则、唯一性规则与批次阈值均通过；批次已登记，可通过 GET /batches/{batch_id} 读取",
+    "FAILED": "至少存在一类校验失败；报告中包含全部失败原因，批次不会登记，下游读取返回 404"
+  }
+}

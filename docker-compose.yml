@@ -1,0 +1,23 @@
+services:
+  data-quality-gate:
+    build: .
+    image: data-quality-gate:latest
+    container_name: data-quality-gate
+    ports:
+      - "8000:8000"
+    environment:
+      DQG_DB_PATH: /data/dqg.db
+      DQG_CATALOG_PATH: /app/data/rule_catalog.json
+      DQG_SAMPLE_PATH: /app/data/sample_payloads.json
+    volumes:
+      - dqg-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health').status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  dqg-data:

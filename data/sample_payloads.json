@@ -1,0 +1,137 @@
+{
+  "description": "数据质量闸门示例提交载荷，可直接 POST 到 /batches/submit",
+  "examples": [
+    {
+      "name": "valid_orders_batch",
+      "expect": "PASSED —— 批次通过并登记",
+      "payload": {
+        "batch_id": "demo-orders-0001",
+        "schema_version": "order-schema/v2.1",
+        "records": [
+          {
+            "order_id": "ORD-1001",
+            "customer_email": "alice@example.com",
+            "status": "active",
+            "amount": 199.5,
+            "currency": "CNY"
+          },
+          {
+            "order_id": "ORD-1002",
+            "customer_email": "bob@example.com",
+            "status": "active",
+            "amount": 42.0,
+            "currency": "USD"
+          },
+          {
+            "order_id": "ORD-1003",
+            "customer_email": "carol@example.com",
+            "status": "inactive",
+            "amount": 0,
+            "currency": "CNY"
+          }
+        ],
+        "rules": {
+          "field_rules": {
+            "order_id": [
+              {"type": "required"},
+              {"type": "type", "value": "string"},
+              {"type": "regex", "pattern": "^ORD-\\d{4}$"}
+            ],
+            "customer_email": [
+              {"type": "required"},
+              {"type": "type", "value": "string"},
+              {"type": "max_length", "max_length": 128}
+            ],
+            "status": [
+              {"type": "required"},
+              {"type": "in", "values": ["active", "inactive", "pending"]}
+            ],
+            "amount": [
+              {"type": "required"},
+              {"type": "type", "value": "number"},
+              {"type": "min", "min": 0},
+              {"type": "max", "max": 1000000}
+            ],
+            "currency": [
+              {"type": "required"},
+              {"type": "in", "values": ["CNY", "USD", "EUR"]}
+            ]
+          },
+          "unique_rules": [
+            {"fields": ["order_id"]},
+            {"fields": ["customer_email", "currency"]}
+          ],
+          "batch_rules": {
+            "max_failure_rate": 0.0,
+            "min_record_count": 1,
+            "max_record_count": 10000
+          }
+        }
+      }
+    },
+    {
+      "name": "invalid_orders_batch",
+      "expect": "FAILED —— 含字段约束失败、跨记录重复与批次阈值失败，且批次不可读",
+      "payload": {
+        "batch_id": "demo-orders-0002",
+        "schema_version": "order-schema/v2.1",
+        "records": [
+          {
+            "order_id": "ORD-2001",
+            "customer_email": "dave@example.com",
+            "status": "unknown",
+            "amount": -50,
+            "currency": "CNY"
+          },
+          {
+            "order_id": "ORD-2002",
+            "customer_email": "eve@example.com",
+            "status": "active",
+            "amount": 88,
+            "currency": "JPY"
+          },
+          {
+            "order_id": "ORD-2002",
+            "customer_email": "frank",
+            "status": "active",
+            "amount": 77,
+            "currency": "CNY"
+          }
+        ],
+        "rules": {
+          "field_rules": {
+            "order_id": [
+              {"type": "required"},
+              {"type": "regex", "pattern": "^ORD-\\d{4}$"}
+            ],
+            "customer_email": [
+              {"type": "required"},
+              {"type": "max_length", "max_length": 128}
+            ],
+            "status": [
+              {"type": "required"},
+              {"type": "in", "values": ["active", "inactive", "pending"]}
+            ],
+            "amount": [
+              {"type": "required"},
+              {"type": "min", "min": 0},
+              {"type": "max", "max": 1000000}
+            ],
+            "currency": [
+              {"type": "required"},
+              {"type": "in", "values": ["CNY", "USD", "EUR"]}
+            ]
+          },
+          "unique_rules": [
+            {"fields": ["order_id"]}
+          ],
+          "batch_rules": {
+            "max_failure_rate": 0.0,
+            "min_record_count": 5,
+            "max_record_count": 10000
+          }
+        }
+      }
+    }
+  ]
+}
